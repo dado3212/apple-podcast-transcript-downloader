@@ -1,2 +1,3 @@
 bearer_token.txt
 *.ttml
+.DS_Store
