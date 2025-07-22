@@ -133,6 +133,7 @@ NSString* getBearerToken(BOOL useCache) {
 }
 
 void printHelp() {
+  printf("FetchTranscript version 1.0\n\n");
   printf("Usage:\n");
   printf("  FetchTranscript <podcastId> [--cache-bearer-token]\n\n");
   printf("Options:\n");
