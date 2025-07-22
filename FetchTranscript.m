@@ -51,6 +51,8 @@ NSString *fetchBearerToken() {
       [urlRequest setValue:timestamp forHTTPHeaderField:@"x-request-timestamp"];
       [urlRequest setValue:storeFront forHTTPHeaderField:@"X-Apple-Store-Front"];
 
+      // Loosely mirrors the functionality of +[AMSMescal signatureUsingRequest:type:bag:error:]
+      // and 'signed_actions' from Mescal's FairPlay encryption code
       id signature = [AMSMescal _signedActionDataFromRequest:urlRequest policy:@{
         @"fields": @[@"clientId"],
         @"headers": @[
