@@ -2,7 +2,8 @@
 
 This takes in a podcast ID and downloads the TTML file for the transcript. Use `--cache-bearer-token` to locally cache the necessary credentials for 30 days (useful if you're running this for multiple podcast IDs).
 
-NOTE: This is currently only tested on macOS 15.5, and confirmed to not work on macOS 14.4.1.
+> [!WARNING]
+> This is currently only tested on macOS 15.5, and **confirmed to not work on macOS 14.4.1.**
 
 ```
 abeals@Alexs-MacBook-Pro apple-podcast-transcript-fetcher % ./FetchTranscript --help
