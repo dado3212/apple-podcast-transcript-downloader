@@ -67,6 +67,11 @@ NSString *fetchBearerToken() {
 
       dispatch_semaphore_t sema = dispatch_semaphore_create(0);
 
+      if (![session respondsToSelector:@selector(signData:bag:)]) {
+        fprintf(stderr, "AMSMescalSession doesn't have the method signData:bag:. You may be on an unsupported version of macOS.\n");
+        exit(1);
+      }
+
       id signedPromise = [session signData:signature bag:urlBag];
       [signedPromise thenWithBlock:^(id result) {
         NSString *xAppleActionSignature = [(NSData *)result base64EncodedStringWithOptions:0];
@@ -133,7 +138,7 @@ NSString* getBearerToken(BOOL useCache) {
 }
 
 void printHelp() {
-  printf("FetchTranscript version 1.0\n\n");
+  printf("FetchTranscript version 1.1.0\n\n");
   printf("Usage:\n");
   printf("  FetchTranscript <podcastId> [--cache-bearer-token]\n\n");
   printf("Options:\n");
@@ -151,14 +156,21 @@ int main(int argc, const char * argv[]) {
 
     // Get the podcast ID that we're trying to download
     NSString *podcastId = [NSString stringWithUTF8String:argv[1]];
+    // Ensure that it's in the right format
+    NSCharacterSet *nonDigits = [[NSCharacterSet decimalDigitCharacterSet] invertedSet];
+    if ([podcastId rangeOfCharacterFromSet:nonDigits].location != NSNotFound) {
+      NSLog(@"Error: podcastId must be a number.");
+      return 1;
+    }
     BOOL useCache = NO;
     if (argc >= 3 && strcmp(argv[2], "--cache-bearer-token") == 0) {
       useCache = YES;
     }
 
     NSString *bearer = getBearerToken(useCache);
-    if (!bearer || bearer.length < 10) {
-      NSLog(@"Failed to obtain Bearer token");
+    // 'ey' corresponds to the Base64 encoding of {", which all valid JWT tokens should start with
+    if (!bearer || bearer.length < 10 || ![bearer hasPrefix:@"ey"]) {
+      NSLog(@"Failed to obtain Bearer token.");
       return 1;
     }
 
@@ -171,6 +183,12 @@ int main(int argc, const char * argv[]) {
 
     NSURLSessionDataTask *task = [[NSURLSession sharedSession] dataTaskWithRequest:transcriptRequest completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) { 
       NSDictionary *json = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
+
+      if (json[@"errors"] != nil) {
+        NSLog(@"Failed to fetch data for transcript %@: %@", podcastId, json[@"errors"]);
+        dispatch_semaphore_signal(sema);
+        return;
+      }
       
       NSDictionary *attrs = json[@"data"][0][@"attributes"];
       NSString *ttmlURL = attrs[@"ttmlAssetUrls"][@"ttml"];
